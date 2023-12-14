@@ -2,6 +2,10 @@ import os
 import shutil
 import zipfile
 
+
+
+
+
 def search_for_level_dat(starting_directories, output_file):
     # Search for 'level.dat' files in specified directories and save the paths to a file.
     print("Calculating the total number of directories...")
