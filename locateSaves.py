@@ -50,8 +50,8 @@ class FileProcessor:
                 return f"{size_bytes:.2f} {unit}"
             size_bytes /= 1024.0
 
-    def copy_files(self, output_directory):
-        # Copy files to a new directory.
+    def copy_files(self, output_directory, copy_only_saves=False):
+        # Copy files to a new directory, with an option to copy only the save directories.
         total_files = sum(len(files) for path in self.paths for _, _, files in os.walk(path))
         processed_files = 0
 
@@ -59,8 +59,18 @@ class FileProcessor:
             os.makedirs(output_directory)
 
         for src_path in self.paths:
-            dst_path = os.path.join(output_directory, os.path.relpath(src_path, os.path.commonprefix(
-                [os.path.dirname(p) for p in self.paths])))
+            if copy_only_saves:
+                dst_path = os.path.join(output_directory, os.path.basename(src_path))
+                # Handle existing directories by renaming
+                counter = 1
+                original_dst_path = dst_path
+                while os.path.exists(dst_path):
+                    dst_path = f"{original_dst_path}_{counter}"
+                    counter += 1
+            else:
+                dst_path = os.path.join(output_directory, os.path.relpath(src_path, os.path.commonprefix(
+                    [os.path.dirname(p) for p in self.paths])))
+
             if not os.path.exists(dst_path):
                 os.makedirs(dst_path)
 
@@ -106,7 +116,7 @@ class FileProcessor:
                         zipf.write(file_path, arcname=arcname)
 
                         processed_files += 1
-                        self.simple_progress_bar(total_files, processed_files)
+                        self.simple_progress_bar(total_files, processed_files, "files")
 
         print("\nZip completed. Zip file saved as", f"{zip_name}.zip")
 
@@ -136,9 +146,10 @@ def main():
     if copy_files_option == 'c':
         directory_name = input("Enter the name of the directory for game files: ")
         output_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), directory_name)
-        file_processor.copy_files(output_directory)
+        copy_structure_option = input("Copy entire directory structure? (y/n): ").lower()
+        file_processor.copy_files(output_directory, copy_structure_option != 'y')
     elif copy_files_option == 'z':
-        zip_name = input("Enter the name of the zip file (e.g., my_files): ")
+        zip_name = input("Enter the name of the zip file: ")
         file_processor.zip_files(zip_name)
     else:
         print("Exiting script.")
